@@ -85,6 +85,22 @@ func TestHandleTokenErrorResponses(t *testing.T) {
 			wantError:      "server_error",
 		},
 		{
+			name:           "upstream 5xx with a grant error code stays a server error on refresh",
+			upstreamStatus: http.StatusServiceUnavailable,
+			upstreamBody:   invalidGrant,
+			form:           url.Values{"grant_type": {"refresh_token"}, "refresh_token": {"rt"}},
+			wantStatus:     http.StatusBadGateway,
+			wantError:      "server_error",
+		},
+		{
+			name:           "upstream 5xx with a grant error code stays a server error on code exchange",
+			upstreamStatus: http.StatusInternalServerError,
+			upstreamBody:   invalidGrant,
+			form:           url.Values{"grant_type": {"authorization_code"}, "code": {"c"}},
+			wantStatus:     http.StatusInternalServerError,
+			wantError:      "server_error",
+		},
+		{
 			name:           "upstream outage is a server error",
 			upstreamStatus: http.StatusServiceUnavailable,
 			upstreamBody:   `unavailable`,
