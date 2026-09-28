@@ -77,6 +77,30 @@ func TestHandleTokenErrorResponses(t *testing.T) {
 			wantError:      "invalid_grant",
 		},
 		{
+			name:           "upstream invalid_request is relayed",
+			upstreamStatus: http.StatusBadRequest,
+			upstreamBody:   `{"error":"invalid_request"}`,
+			form:           url.Values{"grant_type": {"refresh_token"}, "refresh_token": {"rt"}},
+			wantStatus:     http.StatusBadRequest,
+			wantError:      "invalid_request",
+		},
+		{
+			name:           "upstream invalid_scope is relayed",
+			upstreamStatus: http.StatusBadRequest,
+			upstreamBody:   `{"error":"invalid_scope"}`,
+			form:           url.Values{"grant_type": {"refresh_token"}, "refresh_token": {"rt"}},
+			wantStatus:     http.StatusBadRequest,
+			wantError:      "invalid_scope",
+		},
+		{
+			name:           "upstream unauthorized_client is relayed",
+			upstreamStatus: http.StatusBadRequest,
+			upstreamBody:   `{"error":"unauthorized_client"}`,
+			form:           url.Values{"grant_type": {"refresh_token"}, "refresh_token": {"rt"}},
+			wantStatus:     http.StatusBadRequest,
+			wantError:      "unauthorized_client",
+		},
+		{
 			name:           "upstream invalid_client is a server error",
 			upstreamStatus: http.StatusUnauthorized,
 			upstreamBody:   `{"error":"invalid_client"}`,
@@ -107,6 +131,12 @@ func TestHandleTokenErrorResponses(t *testing.T) {
 			form:           url.Values{"grant_type": {"authorization_code"}, "code": {"c"}},
 			wantStatus:     http.StatusInternalServerError,
 			wantError:      "server_error",
+		},
+		{
+			name:       "missing authorization code",
+			form:       url.Values{"grant_type": {"authorization_code"}},
+			wantStatus: http.StatusBadRequest,
+			wantError:  "invalid_request",
 		},
 		{
 			name:       "missing refresh token",
