@@ -1000,16 +1000,20 @@ func (h *OAuth2Handler) writeTokenError(w http.ResponseWriter, status int, code,
 	}
 }
 
-// writeUpstreamTokenError relays an upstream grant error as 400 with the
-// provider's error code, and reports any other failure as server_error with
-// fallbackStatus.
+// writeUpstreamTokenError relays an upstream 4xx grant error as 400 with the
+// provider's error code, and reports any other failure (including a 5xx that
+// carries a grant error code) as server_error with fallbackStatus.
 func (h *OAuth2Handler) writeUpstreamTokenError(w http.ResponseWriter, err error, fallbackStatus int) {
 	var retrieveErr *oauth2.RetrieveError
-	if errors.As(err, &retrieveErr) && relayedTokenErrors[retrieveErr.ErrorCode] {
+	if errors.As(err, &retrieveErr) && isClientErrorResponse(retrieveErr.Response) && relayedTokenErrors[retrieveErr.ErrorCode] {
 		h.writeTokenError(w, http.StatusBadRequest, retrieveErr.ErrorCode, retrieveErr.ErrorDescription)
 		return
 	}
 	h.writeTokenError(w, fallbackStatus, "server_error", "Upstream token request failed")
+}
+
+func isClientErrorResponse(resp *http.Response) bool {
+	return resp != nil && resp.StatusCode >= 400 && resp.StatusCode < 500
 }
 
 // validateOAuthParams performs basic input validation to prevent abuse
